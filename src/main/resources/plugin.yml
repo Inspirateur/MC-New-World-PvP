@@ -1,0 +1,6 @@
+name: MC_NewWorld
+version: "1.0"
+api-version: 1.18
+main: io.github.Inspirateur.MC_NewWorld.Main
+author: Inspirateur
+description: Plugin that implements a New World inspired PvP system
