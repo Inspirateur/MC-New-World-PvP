@@ -6,8 +6,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -74,6 +76,11 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
         };
         updateDecay.runTaskTimer(this, 0, period*TICKS_SEC);
         System.out.println("MC New World is enabled");
+    }
+
+    @Override
+    public void onDisable() {
+        pacifists.save();
     }
 
     private boolean isInSafePoint(UUID playerID) {
@@ -168,6 +175,28 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
         UUID playerID = event.getPlayer().getUniqueId();
         if (isInPvP(playerID)) {
             event.setAmount((int)(event.getAmount()*1.5));
+        }
+    }
+
+    @EventHandler
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        // if a player is going to get hurt
+        if (event.getEntity() instanceof Player damagee) {
+            // check if the damager is another player
+            Player damager = null;
+            if (event.getDamager() instanceof Player) {
+                damager = (Player) event.getDamager();
+            } else if (event.getDamager() instanceof Projectile projectile) {
+                if (projectile.getShooter() instanceof Player) {
+                    damager = (Player) projectile.getShooter();
+                }
+            }
+            if (damager != null) {
+                // if one of them are pacifists, cancel the event
+                if (!isInPvP(damagee.getUniqueId()) || !isInPvP(damager.getUniqueId())) {
+                    event.setCancelled(true);
+                }
+            }
         }
     }
 }
