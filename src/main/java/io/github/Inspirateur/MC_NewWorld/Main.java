@@ -1,7 +1,9 @@
 package io.github.Inspirateur.MC_NewWorld;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,9 +17,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
-public class Main extends JavaPlugin implements Plugin, Listener {
+public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
     private Pacifists pacifists;
     private final int SPTimer = 30;
+    private final int TICKS_SEC = 20;
     private HashMap<UUID, Integer> justGotBeacon;
     private HashSet<UUID> inSpawn;
     private HashMap<UUID, Integer> justLeftSP;
@@ -27,6 +30,7 @@ public class Main extends JavaPlugin implements Plugin, Listener {
         // if the player has PvP enabled
         if (!pacifists.is(playerID)) {
             justLeftSP.put(playerID, SPTimer);
+            System.out.println(playerID.toString()+ " has left a Safe Point");
             Player player = Bukkit.getPlayer(playerID);
             if (player != null) {
                 player.sendMessage("You just left a Safe Point with PvP enabled, you will enter PvP mode in 30 seconds.");
@@ -60,6 +64,7 @@ public class Main extends JavaPlugin implements Plugin, Listener {
                 enablePvP(playerID);
             }
         });
+        Bukkit.getPluginManager().registerEvents(this, this);
         int period = 2;
         BukkitRunnable updateDecay = new BukkitRunnable() {
             @Override
@@ -67,8 +72,7 @@ public class Main extends JavaPlugin implements Plugin, Listener {
                 decays.tick(period);
             }
         };
-        updateDecay.runTaskTimer(this, 0, period);
-        Bukkit.getPluginManager().registerEvents(this, this);
+        updateDecay.runTaskTimer(this, 0, period*TICKS_SEC);
         System.out.println("MC New World is enabled");
     }
 
@@ -85,23 +89,24 @@ public class Main extends JavaPlugin implements Plugin, Listener {
         if (player != null) {
             if (isInSafePoint(player.getUniqueId())) {
                 if(args.length == 0) {
-                    boolean isPacifist = pacifists.is(player.getUniqueId());
-                    player.sendMessage(String.format("Your PvP status is currently set to %b", isPacifist));
+                    boolean isPvP = !pacifists.is(player.getUniqueId());
+                    player.sendMessage(String.format("Your PvP status is currently set to %b", isPvP));
                 } else {
                     try {
-                        boolean isPacifist = Boolean.parseBoolean(args[0]);
-                        pacifists.set(player.getUniqueId(), isPacifist);
+                        boolean isPvP = Boolean.parseBoolean(args[0]);
+                        pacifists.set(player.getUniqueId(), !isPvP);
                         player.sendMessage(String.format(
                                 "PvP status succesfully set to %b\n" +
+                                ChatColor.GRAY + "" + ChatColor.ITALIC +
                                 "Note: PvP remains inactive inside Safe Points and %d seconds after you leave it.",
-                                isPacifist, SPTimer
+                                isPvP, SPTimer
                         ));
                     } catch (RuntimeException e) {
                         player.sendMessage(e.toString());
                     }
                 }
             } else {
-                player.sendMessage("You cannot change your PvP status outside Safe Points.");
+                player.sendMessage("You cannot change your PvP status outside Safe Points.\nGo to the spawn or to a beacon to reach a Safe Point.");
             }
         }
     }
@@ -112,6 +117,14 @@ public class Main extends JavaPlugin implements Plugin, Listener {
             pvp(sender, args);
         }
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
+        if ("pvp".equals(label)) {
+            return Arrays.asList("true", "false");
+        }
+        return new ArrayList<>();
     }
 
     @EventHandler
@@ -136,12 +149,15 @@ public class Main extends JavaPlugin implements Plugin, Listener {
         UUID playerID = player.getUniqueId();
         // detect if a player entered spawn
         if (player.getLocation().distanceSquared(player.getWorld().getSpawnLocation()) < Math.pow(getServer().getSpawnRadius(), 2)) {
+            if (!inSpawn.contains(playerID)) {
+                player.sendMessage("Welcome to the spawn, it is a Safe Point from which you can enable/disable PvP");
+            }
             inSpawn.add(playerID);
         } else {
             // player just left spawn
             if (inSpawn.contains(playerID)) {
                 inSpawn.remove(playerID);
-                justLeftSP.put(playerID, 30);
+                playerLeftSP(playerID);
             }
         }
     }

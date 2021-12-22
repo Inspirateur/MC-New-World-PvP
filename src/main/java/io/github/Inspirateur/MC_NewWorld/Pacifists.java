@@ -25,6 +25,7 @@ public class Pacifists implements Serializable {
 
     public void save() {
         try {
+            new File(path).getParentFile().mkdirs();
             FileOutputStream fileOut = new FileOutputStream(path);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(this.pacifists);

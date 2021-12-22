@@ -4,3 +4,7 @@ api-version: 1.18
 main: io.github.Inspirateur.MC_NewWorld.Main
 author: Inspirateur
 description: Plugin that implements a New World inspired PvP system
+commands:
+  pvp:
+    description: To set your PvP status (only inside Safe Points)
+    usage: /pvp <false|true>
