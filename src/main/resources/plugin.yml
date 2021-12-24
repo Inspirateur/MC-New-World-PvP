@@ -6,5 +6,5 @@ author: Inspirateur
 description: Plugin that implements a New World inspired PvP system
 commands:
   pvp:
-    description: To set your PvP status (only inside Safe Points)
+    description: To set your PvP status (only inside Safe Points). Activating PvP will increase XP gain and luck.
     usage: /pvp <false|true>
