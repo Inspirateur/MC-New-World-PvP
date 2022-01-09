@@ -1,5 +1,5 @@
 # MC-New-World-PvP
-A Minecraft plug-in to manage PvP status, inspired by *New World*.
+A Minecraft Plugin to manage PvP status, inspired by *New World*.
 
 ## Features
 The **spawn** and **active beacons** define *Safe Points*, in which PvP is disabled and players can set their PvP status for the outside, much like cities in New World.  
