@@ -161,6 +161,7 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 				UUID playerID = player.getUniqueId();
 				if (!isInSafePoint(playerID)) {
 					// the player was not in a safe point before that
+					justLeftSP.remove(playerID);
 					player.sendMessage("You entered a beacon, it is a Safe Point from which you can enable/disable PvP");
 					disablePvP(player);
 				}
@@ -178,7 +179,10 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 		UUID playerID = player.getUniqueId();
 		// detect if a player entered spawn
 		if (player.getLocation().distance(player.getWorld().getSpawnLocation()) < SPAWN_RANGE) {
+			// player is in spawn
 			if (!isInSafePoint(playerID)) {
+				// player just got in spawn
+				justLeftSP.remove(playerID);
 				player.sendMessage("Welcome to the spawn, it is a Safe Point from which you can enable/disable PvP");
 				disablePvP(player);
 			}
