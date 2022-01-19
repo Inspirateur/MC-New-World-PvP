@@ -62,12 +62,22 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 		pvpTeam.removePlayer(player);
 	}
 
+	private Team getPvpTeam() {
+		var scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		try {
+			pvpTeam = scoreboard.getTeam("pvp");
+		} catch (IllegalArgumentException e) {
+			pvpTeam = scoreboard.registerNewTeam("pvp");
+			pvpTeam.color(NamedTextColor.RED);
+		}
+		return pvpTeam;
+	}
+
 	@Override
 	public void onEnable() {
-		pvpTeam = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam("pvp");
-		pvpTeam.color(NamedTextColor.RED);
-		inSpawn = new HashSet<>();
 		pacifists = new Pacifists();
+		pvpTeam = getPvpTeam();
+		inSpawn = new HashSet<>();
 		justGotBeacon = new HashMap<>();
 		justLeftSP = new HashMap<>();
 		decays = new Decays<>();
