@@ -2,6 +2,7 @@ package io.github.Inspirateur.MC_NewWorld;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -188,7 +189,7 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 	private void checkSpawn(Player player) {
 		UUID playerID = player.getUniqueId();
 		// detect if a player entered spawn
-		if (player.getLocation().distance(player.getWorld().getSpawnLocation()) < SPAWN_RANGE) {
+		if (player.getWorld().getEnvironment() == World.Environment.NORMAL && player.getLocation().distance(player.getWorld().getSpawnLocation()) < SPAWN_RANGE) {
 			// player is in spawn
 			if (!isInSafePoint(playerID)) {
 				// player just got in spawn
