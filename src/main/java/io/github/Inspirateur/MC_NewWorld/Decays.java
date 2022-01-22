@@ -2,6 +2,7 @@ package io.github.Inspirateur.MC_NewWorld;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+
 public class Decays<K> {
     private final ArrayList<Decay<K>> decays;
 

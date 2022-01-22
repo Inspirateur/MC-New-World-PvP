@@ -1,8 +1,7 @@
 package io.github.Inspirateur.MC_NewWorld;
-import org.apache.commons.lang.ObjectUtils;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.concurrent.Callable;
+
 
 public class Decay<K> {
     interface DecayCallback<K> {

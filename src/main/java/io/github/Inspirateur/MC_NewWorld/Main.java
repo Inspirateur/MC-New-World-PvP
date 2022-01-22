@@ -2,6 +2,7 @@ package io.github.Inspirateur.MC_NewWorld;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -25,17 +26,46 @@ import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
+
 public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 	private Pacifists pacifists;
 	private final int SP_TIMER = 30;
 	private final int SPAWN_RANGE = 40;
-	private final double XP_BOOST = 1.5;
-	private final int LUCK_BOOST = 1;
+	private final List<Integer> RANGES = Arrays.asList(2000, 5000, 10000);
+	private final List<Double> XP_BOOSTS = Arrays.asList(2., 1.5, 1.2, 1.1);
+	private final List<Integer> LUCK_BOOSTS = Arrays.asList(3, 2, 1, 0);
 	private HashMap<UUID, Integer> justGotBeacon;
 	private HashSet<UUID> inSpawn;
 	private HashMap<UUID, Integer> justLeftSP;
 	private Decays<UUID> decays;
 	private Team pvpTeam;
+
+	private int getPvPRangeID(Location location) {
+		int val = Math.max(Math.abs(location.getBlockX()), Math.abs(location.getBlockZ()));
+		int i = 0;
+		while (i < RANGES.size() && val >= RANGES.get(i)) {
+			i += 1;
+		}
+		return i;
+	}
+
+	private double getXPBoost(Location location) {
+		return XP_BOOSTS.get(getPvPRangeID(location));
+	}
+
+	private int getLuckBoost(Location location) {
+		return LUCK_BOOSTS.get(getPvPRangeID(location));
+	}
+
+	private String getPvPRewardMsg(double XPBoost, int luckBoost) {
+		return String.format("%.1f xp multiplier, Luck %d", XPBoost, luckBoost);
+	}
+
+	private String getPvPRewardMsg(Location location) {
+		return getPvPRewardMsg(getXPBoost(location), getLuckBoost(location));
+	}
+
+
 
 	private void playerLeftSP(UUID playerID) {
 		// if the player has PvP enabled
@@ -52,8 +82,15 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 	private void enablePvP(UUID playerID) {
 		Player player = Bukkit.getPlayer(playerID);
 		if(player != null) {
-			player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, Integer.MAX_VALUE, LUCK_BOOST-1, true, false));
-			player.sendMessage("PvP is active");
+			Location location = player.getLocation();
+			double XPBoost = getXPBoost(location);
+			int luckBoost = getLuckBoost(location);
+			if (luckBoost > 0) {
+				player.addPotionEffect(
+					new PotionEffect(PotionEffectType.LUCK, Integer.MAX_VALUE, luckBoost-1, true, false)
+				);
+			}
+			player.sendMessage("PvP is active, "+getPvPRewardMsg(XPBoost, luckBoost));
 			pvpTeam.addPlayer(player);
 		}
 	}
@@ -211,6 +248,29 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 	public void onPlayerMove(PlayerMoveEvent event) {
 		Player player = event.getPlayer();
 		checkSpawn(player);
+		// adjust pvp rewards
+		if (isInPvP(player.getUniqueId())) {
+			int oldRangeID = getPvPRangeID(event.getFrom());
+			int newRangeID = getPvPRangeID(event.getTo());
+			if (oldRangeID != newRangeID) {
+				// the player changed PVP range, change the Luck boost (the XP boost is computed on xp gain)
+				player.removePotionEffect(PotionEffectType.LUCK);
+				int luckBoost = getLuckBoost(event.getTo());
+				if (luckBoost > 0) {
+					player.addPotionEffect(
+							new PotionEffect(PotionEffectType.LUCK, Integer.MAX_VALUE, luckBoost-1, true, false)
+					);
+				}
+				// inform the player
+				if (newRangeID >= RANGES.size()) {
+					player.sendMessage(
+						String.format("You just exited the %d bloc range, your new PvP rewards are:\n", RANGES.get(RANGES.size()-1))+getPvPRewardMsg(event.getTo())
+					);
+				} else {
+					player.sendMessage(String.format("You entered the %d bloc range, your new PvP rewards are:\n", RANGES.get(newRangeID))+getPvPRewardMsg(event.getTo()));
+				}
+			}
+		}
 	}
 
 	@EventHandler
@@ -226,9 +286,9 @@ public class Main extends JavaPlugin implements Plugin, Listener, TabCompleter {
 	@EventHandler
 	public void onPlayerExpChange(PlayerExpChangeEvent event) {
 		// to reward pvp players
-		UUID playerID = event.getPlayer().getUniqueId();
-		if (isInPvP(playerID)) {
-			event.setAmount((int)(event.getAmount()*XP_BOOST));
+		Player player = event.getPlayer();
+		if (isInPvP(player.getUniqueId())) {
+			event.setAmount((int)(event.getAmount()*getXPBoost(player.getLocation())));
 		}
 	}
 
